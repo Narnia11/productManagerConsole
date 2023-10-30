@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using ProductManager.Domain;
+using ProductManager.DTO;
 using static System.Console;
 
 namespace ProductManager;
@@ -9,7 +10,7 @@ class Program
 {
     static readonly HttpClient httpClient = new()
     {
-        BaseAddress = new Uri("https://localhost:7000")
+        BaseAddress = new Uri("https://localhost:7000/")
     };
 
     static void Main()
@@ -100,7 +101,7 @@ class Program
                     }
                     catch
                     {
-                        WriteLine("Product redan registrerad");
+                        WriteLine("Ogiltig data");
                     }
 
                     Thread.Sleep(2000);
@@ -124,9 +125,17 @@ class Program
 
     private static void SaveProduct(Product product)
     {
+        var createProductRequest = new CreateProductRequest
+        {
+            ProductName = product.ProductName,
+            SerialNum = product.SerialNum,
+            ProductDesc = product.ProductDesc,
+            ImageUrl = product.ImageUrl,
+            Price = product.Price
+        };
         // 1 - Serialisera product (alltså från product-objektet, skapa motsvarande JSON-objekt)
         // { "make": "Tesla", model: "X", ... }
-        var json = JsonSerializer.Serialize(product);
+        var json = JsonSerializer.Serialize(createProductRequest);
 
         // 2 - Skicka JSON till web API:et
         var body = new StringContent(
@@ -185,7 +194,7 @@ class Program
 
         Clear();
 
-        var product = SearchProduct(serialNum);
+        var product = GetProduct(serialNum);
 
         if (product is not null)
         {
@@ -215,12 +224,16 @@ class Program
 
                     if (yesOrNoKey.Key == ConsoleKey.J)
                     {
-                        //context.Product.Remove(product);
-                        //context.SaveChanges();
-                        //WriteLine("Produkt raderad");
-                        //Thread.Sleep(2000);
+                        if (DeleteProduct(product))
+                        {
+                            WriteLine("Product raderat");
+                        }
+                        else
+                        {
+                            WriteLine("Product saknas");
+                        }
 
-                        DeleteProduct(product);
+                        Thread.Sleep(2000);
                         returnToDisplay = false;
                     }
                     else if (yesOrNoKey.Key == ConsoleKey.N)
@@ -237,23 +250,31 @@ class Program
             WriteLine("Produkt finns ej");
             Thread.Sleep(20000);
         }
-    }
+        }
 
-    private static Product? SearchProduct(string serialNum)
+private static Product? GetProduct(string serialNum)
+{
+    try
     {
- try
-    {
-        var response = httpClient.GetAsync($"https://localhost:7000/products?serialNum={serialNum}")
-            .Result;
+        var response = httpClient.GetAsync($"products?serialNum={serialNum}").Result;
 
         if (response.IsSuccessStatusCode)
         {
             var json = response.Content.ReadAsStringAsync().Result;
             try
             {
-                var product = JsonSerializer.Deserialize<Product>(json);
-                if (product != null)
+                var productDto = JsonSerializer.Deserialize<ProductDto>(json);
+                if (productDto != null)
                 {
+                    // Map the ProductDto to a Product object
+                    var product = new Product
+                    {
+                        ProductName = productDto.ProductName,
+                        SerialNum = productDto.SerialNum,
+                        ProductDesc = productDto.ProductDesc,
+                        ImageUrl = productDto.ImageUrl,
+                        Price = productDto.Price // Deserialize as int
+                    };
                     return product;
                 }
             }
@@ -279,31 +300,7 @@ class Program
     }
 
     return null;
-
-        // try
-        // {
-        //     //HttpResponseMessage response = httpClient.GetAsync($"https://localhost:7000/products?serialNum={serialNum}")
-        //     var response = httpClient.GetAsync($"https://localhost:7000/products?serialNum={serialNum}")
-        //          .Result;
-
-        //     if (response.IsSuccessStatusCode)
-        //     {
-        //         var json = response.Content.ReadAsStringAsync().Result;
-        //         var product = JsonSerializer.Deserialize<Product>(json);
-
-        //         if (product != null)
-        //         {
-        //             return product;
-        //         }
-        //     }
-        // }
-        // catch (Exception ex)
-        // {
-        //     WriteLine("An error occurred: " + ex.Message);
-        // }
-
-        // return null;
-    }
+}
 
     private static void EscapeKeyPressed(ConsoleKey key)
     {
@@ -319,19 +316,18 @@ class Program
         //while (ReadKey(true).Key != key) ; 
     }
 
-    private static void DeleteProduct(Product product)
+    private static bool DeleteProduct(Product product)
     {
-        //HttpResponseMessage response = httpClient.DeleteAsync($"products/{product.Id}").Result;
-        var response = httpClient.DeleteAsync($"products/{product.Id}").Result;
-
-        if (response.IsSuccessStatusCode)
-        {
-            WriteLine("Produkt raderad");
-        }
-        else
-        {
-            WriteLine("Fel vid radering av produkten");
-        }
-        Thread.Sleep(2000);
+        var response = httpClient.DeleteAsync($"products/{product.SerialNum}").Result;
+        return response.IsSuccessStatusCode;
+        // if (response.IsSuccessStatusCode)
+        // {
+        //     WriteLine("Produkt raderad");
+        // }
+        // else
+        // {
+        //     WriteLine("Fel vid radering av produkten");
+        // }
+        // Thread.Sleep(2000);
     }
 }

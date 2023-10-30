@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+//using System.ComponentModel.DataAnnotations;
 //using Microsoft.EntityFrameworkCore;
 
 namespace ProductManager.Domain;
@@ -9,19 +9,19 @@ class Product
     public int Id { get; set; }
 
     
-    [MaxLength(50)]
+    //[MaxLength(50)]
     public required string ProductName { get; set; }
 
    
-    [MaxLength(10)]
+    //[MaxLength(10)]
     public required string SerialNum { get; set; }
 
 
-    [MaxLength(50)]
+    //[MaxLength(50)]
     public required string ProductDesc { get; set; }
 
    
-    [MaxLength(100)]
+    //[MaxLength(100)]
     public required string ImageUrl { get; set; }
 
     public int Price { get; set; }
