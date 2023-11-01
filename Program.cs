@@ -224,7 +224,7 @@ class Program
 
                     if (yesOrNoKey.Key == ConsoleKey.J)
                     {
-                        if (DeleteProduct(product))
+                        if (DeleteProduct(product.SerialNum))
                         {
                             WriteLine("Product raderat");
                         }
@@ -248,7 +248,7 @@ class Program
         else
         {
             WriteLine("Produkt finns ej");
-            Thread.Sleep(5000);
+            Thread.Sleep(7000);
         }
     }
 
@@ -256,8 +256,7 @@ class Program
     {
         try
         {
-            var response = httpClient.GetAsync($"products?serialNum={serialNum}").Result;
-
+            var response = httpClient.GetAsync($"products/{serialNum}").Result;
             if (response.IsSuccessStatusCode)
             {
                 var json = response.Content.ReadAsStringAsync().Result;
@@ -269,6 +268,7 @@ class Program
                         // Map the ProductDto to a Product object
                         var product = new Product
                         {
+                            Id = productDto.Id,
                             ProductName = productDto.ProductName,
                             SerialNum = productDto.SerialNum,
                             ProductDesc = productDto.ProductDesc,
@@ -301,9 +301,11 @@ class Program
         return null;
     }
 
-    private static bool DeleteProduct(Product product)
+    private static bool DeleteProduct(string serialNum)
     {
-        var response = httpClient.DeleteAsync($"products/{product.SerialNum}").Result;
+        var response = httpClient.DeleteAsync($"products/{serialNum}").Result;
+
+        // Kontrollera om vi fick en 2xx statuskod tillbaka (kommer vara 204 No Content i så fall)
         return response.IsSuccessStatusCode;
     }
 
