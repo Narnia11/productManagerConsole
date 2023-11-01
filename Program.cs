@@ -216,7 +216,7 @@ class Program
                     WriteLine($"Namn: {product.ProductName}");
                     WriteLine($"SKU: {product.SerialNum}");
                     WriteLine($"Beskrivning: {product.ProductDesc}");
-                    WriteLine($"Bild (URL): : {product.ImageUrl}");
+                    WriteLine($"Bild (URL): {product.ImageUrl}");
                     WriteLine($"Pris: {product.Price}");
                     WriteLine("Radera produkt? (J)a (N)ej");
 
@@ -248,86 +248,68 @@ class Program
         else
         {
             WriteLine("Produkt finns ej");
-            Thread.Sleep(20000);
+            Thread.Sleep(5000);
         }
-        }
+    }
 
-private static Product? GetProduct(string serialNum)
-{
-    try
+    private static Product? GetProduct(string serialNum)
     {
-        var response = httpClient.GetAsync($"products?serialNum={serialNum}").Result;
-
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var json = response.Content.ReadAsStringAsync().Result;
-            try
+            var response = httpClient.GetAsync($"products?serialNum={serialNum}").Result;
+
+            if (response.IsSuccessStatusCode)
             {
-                var productDto = JsonSerializer.Deserialize<ProductDto>(json);
-                if (productDto != null)
+                var json = response.Content.ReadAsStringAsync().Result;
+                try
                 {
-                    // Map the ProductDto to a Product object
-                    var product = new Product
+                    var productDto = JsonSerializer.Deserialize<ProductDto>(json);
+                    if (productDto != null)
                     {
-                        ProductName = productDto.ProductName,
-                        SerialNum = productDto.SerialNum,
-                        ProductDesc = productDto.ProductDesc,
-                        ImageUrl = productDto.ImageUrl,
-                        Price = productDto.Price // Deserialize as int
-                    };
-                    return product;
+                        // Map the ProductDto to a Product object
+                        var product = new Product
+                        {
+                            ProductName = productDto.ProductName,
+                            SerialNum = productDto.SerialNum,
+                            ProductDesc = productDto.ProductDesc,
+                            ImageUrl = productDto.ImageUrl,
+                            Price = productDto.Price // Deserialize as int
+                        };
+                        return product;
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    WriteLine($"Error deserializing the response: {ex.Message}");
                 }
             }
-            catch (JsonException ex)
+            else if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                WriteLine($"Error deserializing the response: {ex.Message}");
-                WriteLine("Response content: " + json);
+                WriteLine("Product not found");
+            }
+            else
+            {
+                WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+                WriteLine("Response content: " + response.Content.ReadAsStringAsync().Result);
             }
         }
-        else if (response.StatusCode == HttpStatusCode.NotFound)
+        catch (Exception ex)
         {
-            WriteLine("Product not found");
+            WriteLine("An error occurred: " + ex.Message);
         }
-        else
-        {
-            WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
-            WriteLine("Response content: " + response.Content.ReadAsStringAsync().Result);
-        }
-    }
-    catch (Exception ex)
-    {
-        WriteLine("An error occurred: " + ex.Message);
-    }
 
-    return null;
-}
-
-    private static void EscapeKeyPressed(ConsoleKey key)
-    {
-        Clear();
-        ShowMainMenu();
-
-        //بجای دوخط کد بالا میتوان مثل زیر نوشت 
-        //یعنی تاوقتی یک دستوری را انجام بده که دکمه فشرده شده مخالف آن دکمه ای باشد که 
-        // داخل پرانتز جلوی نام فانکشن هنگام فراخوانی اش مینویسیم.
-        //مثل خط 209 که دکمه اسکیپ را داخل پرانتز نوشتیم
-        // یعنی تا اسکیپ را نزدیم کارهای بالای خط209 را انجام بده اگر اسکیپ زدیم خط بعدی کد را اجرا کن
-
-        //while (ReadKey(true).Key != key) ; 
+        return null;
     }
 
     private static bool DeleteProduct(Product product)
     {
         var response = httpClient.DeleteAsync($"products/{product.SerialNum}").Result;
         return response.IsSuccessStatusCode;
-        // if (response.IsSuccessStatusCode)
-        // {
-        //     WriteLine("Produkt raderad");
-        // }
-        // else
-        // {
-        //     WriteLine("Fel vid radering av produkten");
-        // }
-        // Thread.Sleep(2000);
+    }
+
+    private static void EscapeKeyPressed(ConsoleKey key)
+    {
+        Clear();
+        ShowMainMenu();
     }
 }
