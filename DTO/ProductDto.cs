@@ -1,5 +1,7 @@
 namespace ProductManager.DTO;
 
+
+
   public class ProductDto
 {
     public int Id { get; set; }

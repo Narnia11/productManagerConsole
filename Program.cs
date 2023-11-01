@@ -205,7 +205,7 @@ class Program
                 WriteLine($"Namn: {product.ProductName}");
                 WriteLine($"SKU: {product.SerialNum}");
                 WriteLine($"Beskrivning: {product.ProductDesc}");
-                WriteLine($"Bild (URL): : {product.ImageUrl}");
+                WriteLine($"Bild (URL): {product.ImageUrl}");
                 WriteLine($"Pris: {product.Price}");
                 WriteLine("(R)adera");
                 var deleteKey = ReadKey(intercept: true);
@@ -252,6 +252,7 @@ class Program
         try
         {
             var response = httpClient.GetAsync($"products/{serialNum}").Result;
+            
             if (response.IsSuccessStatusCode)
             {
                 var json = response.Content.ReadAsStringAsync().Result;
@@ -260,7 +261,9 @@ class Program
 
                 try
                 {
-                    var productDto = JsonSerializer.Deserialize<ProductDto>(json);
+                    var productDto = JsonSerializer.Deserialize<ProductDto>(json, new JsonSerializerOptions {});
+
+                    
                     if (productDto != null)
                     {
                         // Map the ProductDto to a Product object
