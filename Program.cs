@@ -230,7 +230,7 @@ class Program
                         }
                         else
                         {
-                            WriteLine("Product saknas");
+                            WriteLine("DeleteProduct function doesn't work");
                         }
 
                         Thread.Sleep(2000);
@@ -245,11 +245,6 @@ class Program
                 EscapeKeyPressed(ConsoleKey.Escape);
             } while (returnToDisplay);
         }
-        else
-        {
-            WriteLine("Produkt finns ej");
-            Thread.Sleep(7000);
-        }
     }
 
     private static Product? GetProduct(string serialNum)
@@ -260,6 +255,9 @@ class Program
             if (response.IsSuccessStatusCode)
             {
                 var json = response.Content.ReadAsStringAsync().Result;
+                //Print the json variable after deserialization to make sure deserialization process works well
+                WriteLine($"API Response JSON: {json}"); 
+
                 try
                 {
                     var productDto = JsonSerializer.Deserialize<ProductDto>(json);
@@ -281,6 +279,7 @@ class Program
                 catch (JsonException ex)
                 {
                     WriteLine($"Error deserializing the response: {ex.Message}");
+                    Thread.Sleep(10000);
                 }
             }
             else if (response.StatusCode == HttpStatusCode.NotFound)
@@ -297,7 +296,7 @@ class Program
         {
             WriteLine("An error occurred: " + ex.Message);
         }
-
+        Thread.Sleep(2000);
         return null;
     }
 
