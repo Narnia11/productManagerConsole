@@ -247,61 +247,120 @@ class Program
         }
     }
 
-    private static Product? GetProduct(string serialNum)
-    {
-        try
-        {
-            var response = httpClient.GetAsync($"products/{serialNum}").Result;
+    // private static Product? GetProduct(string serialNum)
+    // {
+    //     try
+    //     {
+    //         var response = httpClient.GetAsync($"products/{serialNum}").Result;
             
-            if (response.IsSuccessStatusCode)
-            {
-                var json = response.Content.ReadAsStringAsync().Result;
-                //Print the json variable after deserialization to make sure deserialization process works well
-                WriteLine($"API Response JSON: {json}"); 
+    //         if (response.IsSuccessStatusCode)
+    //         {
+    //             var json = response.Content.ReadAsStringAsync().Result;
+    //             //Print the json variable after deserialization to make sure deserialization process works well
+    //             WriteLine($"API Response JSON: {json}"); 
 
-                try
-                {
-                    var productDto = JsonSerializer.Deserialize<ProductDto>(json, new JsonSerializerOptions {});
+    //             try
+    //             {
+    //                 var productDto = JsonSerializer.Deserialize<ProductDto>(json, new JsonSerializerOptions{} );
 
                     
-                    if (productDto != null)
-                    {
-                        // Map the ProductDto to a Product object
-                        var product = new Product
-                        {
-                            Id = productDto.Id,
-                            ProductName = productDto.ProductName,
-                            SerialNum = productDto.SerialNum,
-                            ProductDesc = productDto.ProductDesc,
-                            ImageUrl = productDto.ImageUrl,
-                            Price = productDto.Price // Deserialize as int
-                        };
-                        return product;
-                    }
-                }
-                catch (JsonException ex)
-                {
-                    WriteLine($"Error deserializing the response: {ex.Message}");
-                    Thread.Sleep(10000);
-                }
-            }
-            else if (response.StatusCode == HttpStatusCode.NotFound)
-            {
-                WriteLine("Product not found");
-            }
-            else
-            {
-                WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
-                WriteLine("Response content: " + response.Content.ReadAsStringAsync().Result);
-            }
-        }
-        catch (Exception ex)
+    //                 if (productDto != null)
+    //                 {
+    //                     // Map the ProductDto to a Product object
+    //                     var product = new Product
+    //                     {
+    //                         Id = productDto.Id,
+    //                         ProductName = productDto.ProductName,
+    //                         SerialNum = productDto.SerialNum,
+    //                         ProductDesc = productDto.ProductDesc,
+    //                         ImageUrl = productDto.ImageUrl,
+    //                         Price = productDto.Price // Deserialize as int
+    //                     };
+    //                     return product;
+    //                 }
+    //             }
+    //             catch (JsonException ex)
+    //             {
+    //                 WriteLine($"Error deserializing the response: {ex.Message}");
+    //                 Thread.Sleep(10000);
+    //             }
+    //         }
+    //         else if (response.StatusCode == HttpStatusCode.NotFound)
+    //         {
+    //             WriteLine("Product not found");
+    //         }
+    //         else
+    //         {
+    //             WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+    //             WriteLine("Response content: " + response.Content.ReadAsStringAsync().Result);
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         WriteLine("An error occurred: " + ex.Message);
+    //     }
+    //     Thread.Sleep(2000);
+    //     return null;
+    // }
+
+    private static Product? GetProduct(string serialNum)
+{
+    try
+    {
+        var response = httpClient.GetAsync($"products/{serialNum}").Result;
+
+        if (response.IsSuccessStatusCode)
         {
-            WriteLine("An error occurred: " + ex.Message);
+            var json = response.Content.ReadAsStringAsync().Result;
+
+            try
+            {
+                var jsonSerializerOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                var productDto = JsonSerializer.Deserialize<ProductDto>(json, jsonSerializerOptions);
+
+                if (productDto != null)
+                {
+                    // Map the ProductDto to a Product object
+                    var product = new Product
+                    {
+                        Id = productDto.Id,
+                        ProductName = productDto.ProductName,
+                        SerialNum = productDto.SerialNum,
+                        ProductDesc = productDto.ProductDesc,
+                        ImageUrl = productDto.ImageUrl,
+                        Price = productDto.Price // Deserialize as int
+                    };
+                    return product;
+                }
+            }
+            catch (JsonException ex)
+            {
+                WriteLine($"Error deserializing the response: {ex.Message}");
+                Thread.Sleep(10000);
+            }
         }
-        Thread.Sleep(2000);
-        return null;
+        else if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            WriteLine("Product not found");
+        }
+        else
+        {
+            WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+            WriteLine("Response content: " + response.Content.ReadAsStringAsync().Result);
+        }
     }
+    catch (Exception ex)
+    {
+        WriteLine("An error occurred: " + ex.Message);
+    }
+    Thread.Sleep(2000);
+    return null;
+}
+
 
     private static bool DeleteProduct(string serialNum)
     {
