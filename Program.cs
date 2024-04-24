@@ -8,7 +8,7 @@ using static System.Console;
 namespace ProductManager;
 class Program
 {
-    static readonly HttpClient httpClient = new()
+    static readonly HttpClient httpClient = new() //readonly:cannot be changed during the lifetime of the application
     {
         BaseAddress = new Uri("https://localhost:7000/")
     };
@@ -125,7 +125,7 @@ class Program
 
     private static void SaveProduct(Product product)
     {
-        var createProductRequest = new CreateProductRequest
+        var createProductRequest = new CreateProductRequest //prepares the data to be sent to the web API.
         {
             ProductName = product.ProductName,
             SerialNum = product.SerialNum,
@@ -133,24 +133,20 @@ class Program
             ImageUrl = product.ImageUrl,
             Price = product.Price
         };
-        // 1 - Serialisera product (alltså från product-objektet, skapa motsvarande JSON-objekt)
-        // { "make": "Tesla", model: "X", ... }
+        //JsonSerializer converts the CreateProductRequest object into a JSON string
+        // { "productName": "shirt1", serialNum: "1", ... }
         var json = JsonSerializer.Serialize(createProductRequest);
 
         // 2 - Skicka JSON till web API:et
-        var body = new StringContent(
-          json,
-          Encoding.UTF8,
-          // Beskriver formatet på data
-          "application/json");
+        var body = new StringContent(    //StringContent:to represent the content of the HTTP request's body
+          json,                          //contain a string with JSON data to send as the HTTP request's body
+          Encoding.UTF8,                 //type of the encoding is UTF8
+          "application/json");           //the format of data
 
-        // HTTP POST https://localhost:7000/products
+        //sends an HTTP POST request(which contains the JSON data prepared in the previous steps) to the "products" endpoint in webAPI.
         var response = httpClient.PostAsync("products", body).Result;
 
-        // 3 - Om det gick bra (2xx - i detta fallet "201 Created"), avsluta metoden, annars (400 Bad Request) 
-        //     kasta en exception
-
-        // Kommer kasta en exception om statuskoden inte är 2xx
+        //ensure that the HTTP response status code is 2xx, otherwise an exception will be thrown.
         response.EnsureSuccessStatusCode();
     }
 
@@ -247,119 +243,63 @@ class Program
         }
     }
 
-    // private static Product? GetProduct(string serialNum)
-    // {
-    //     try
-    //     {
-    //         var response = httpClient.GetAsync($"products/{serialNum}").Result;
-            
-    //         if (response.IsSuccessStatusCode)
-    //         {
-    //             var json = response.Content.ReadAsStringAsync().Result;
-    //             //Print the json variable after deserialization to make sure deserialization process works well
-    //             WriteLine($"API Response JSON: {json}"); 
-
-    //             try
-    //             {
-    //                 var productDto = JsonSerializer.Deserialize<ProductDto>(json, new JsonSerializerOptions{} );
-
-                    
-    //                 if (productDto != null)
-    //                 {
-    //                     // Map the ProductDto to a Product object
-    //                     var product = new Product
-    //                     {
-    //                         Id = productDto.Id,
-    //                         ProductName = productDto.ProductName,
-    //                         SerialNum = productDto.SerialNum,
-    //                         ProductDesc = productDto.ProductDesc,
-    //                         ImageUrl = productDto.ImageUrl,
-    //                         Price = productDto.Price // Deserialize as int
-    //                     };
-    //                     return product;
-    //                 }
-    //             }
-    //             catch (JsonException ex)
-    //             {
-    //                 WriteLine($"Error deserializing the response: {ex.Message}");
-    //                 Thread.Sleep(10000);
-    //             }
-    //         }
-    //         else if (response.StatusCode == HttpStatusCode.NotFound)
-    //         {
-    //             WriteLine("Product not found");
-    //         }
-    //         else
-    //         {
-    //             WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
-    //             WriteLine("Response content: " + response.Content.ReadAsStringAsync().Result);
-    //         }
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         WriteLine("An error occurred: " + ex.Message);
-    //     }
-    //     Thread.Sleep(2000);
-    //     return null;
-    // }
-
     private static Product? GetProduct(string serialNum)
-{
-    try
     {
-        var response = httpClient.GetAsync($"products/{serialNum}").Result;
-
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var json = response.Content.ReadAsStringAsync().Result;
+            var response = httpClient.GetAsync($"products/{serialNum}").Result;
 
-            try
+            if (response.IsSuccessStatusCode)
             {
-                var jsonSerializerOptions = new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                };
+                var json = response.Content.ReadAsStringAsync().Result;
 
-                var productDto = JsonSerializer.Deserialize<ProductDto>(json, jsonSerializerOptions);
-
-                if (productDto != null)
-                {
-                    // Map the ProductDto to a Product object
-                    var product = new Product
+                try
+                {   //to create a JsonSerializerOptions object so that its properties are in CamelCase
+                    var jsonSerializerOptions = new JsonSerializerOptions
                     {
-                        Id = productDto.Id,
-                        ProductName = productDto.ProductName,
-                        SerialNum = productDto.SerialNum,
-                        ProductDesc = productDto.ProductDesc,
-                        ImageUrl = productDto.ImageUrl,
-                        Price = productDto.Price // Deserialize as int
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                     };
-                    return product;
+                    //to deserialized the JSON content into a ProductDto object 
+                    var productDto = JsonSerializer.Deserialize<ProductDto>(json, jsonSerializerOptions);
+
+                    if (productDto != null)
+                    {
+                        // Map the ProductDto to a Product object
+                        var product = new Product
+                        {
+                            Id = productDto.Id,
+                            ProductName = productDto.ProductName,
+                            SerialNum = productDto.SerialNum,
+                            ProductDesc = productDto.ProductDesc,
+                            ImageUrl = productDto.ImageUrl,
+                            Price = productDto.Price 
+                        };
+                        return product;
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    WriteLine($"Error deserializing the response: {ex.Message}");
+                    Thread.Sleep(10000);
                 }
             }
-            catch (JsonException ex)
+            else if (response.StatusCode == HttpStatusCode.NotFound) // 404 Not Found
             {
-                WriteLine($"Error deserializing the response: {ex.Message}");
-                Thread.Sleep(10000);
+                WriteLine("Product not found");
+            }
+            else
+            {
+                WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+                WriteLine("Response content: " + response.Content.ReadAsStringAsync().Result);
             }
         }
-        else if (response.StatusCode == HttpStatusCode.NotFound)
+        catch (Exception ex)
         {
-            WriteLine("Product not found");
+            WriteLine("An error occurred: " + ex.Message);
         }
-        else
-        {
-            WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
-            WriteLine("Response content: " + response.Content.ReadAsStringAsync().Result);
-        }
+        Thread.Sleep(2000);
+        return null;
     }
-    catch (Exception ex)
-    {
-        WriteLine("An error occurred: " + ex.Message);
-    }
-    Thread.Sleep(2000);
-    return null;
-}
 
 
     private static bool DeleteProduct(string serialNum)
